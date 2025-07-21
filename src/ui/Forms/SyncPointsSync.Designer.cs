@@ -47,6 +47,7 @@
             this.buttonApplySync = new System.Windows.Forms.Button();
             this.buttonCancel = new System.Windows.Forms.Button();
             this.buttonOK = new System.Windows.Forms.Button();
+            this.autoSetSyncProgress = new System.Windows.Forms.ProgressBar();
             this.groupBoxImportResult.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.minFuzzScore)).BeginInit();
             this.SuspendLayout();
@@ -56,6 +57,7 @@
             this.groupBoxImportResult.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxImportResult.Controls.Add(this.autoSetSyncProgress);
             this.groupBoxImportResult.Controls.Add(this.similarityScoreLabel);
             this.groupBoxImportResult.Controls.Add(this.buttonAutoSetSyncPoints);
             this.groupBoxImportResult.Controls.Add(this.minFuzzScore);
@@ -305,6 +307,14 @@
             this.buttonOK.UseVisualStyleBackColor = true;
             this.buttonOK.Click += new System.EventHandler(this.buttonOK_Click);
             // 
+            // autoSetSyncProgress
+            // 
+            this.autoSetSyncProgress.Location = new System.Drawing.Point(482, 313);
+            this.autoSetSyncProgress.Name = "autoSetSyncProgress";
+            this.autoSetSyncProgress.Size = new System.Drawing.Size(140, 23);
+            this.autoSetSyncProgress.TabIndex = 39;
+            this.autoSetSyncProgress.Visible = false;
+            // 
             // SyncPointsSync
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -356,5 +366,6 @@
         private System.Windows.Forms.Button buttonAutoSetSyncPoints;
         private System.Windows.Forms.TrackBar minFuzzScore;
         private System.Windows.Forms.Label similarityScoreLabel;
+        private System.Windows.Forms.ProgressBar autoSetSyncProgress;
     }
 }

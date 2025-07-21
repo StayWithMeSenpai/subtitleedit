@@ -10,12 +10,14 @@ using Nikse.SubtitleEdit.Controls;
 using FuzzySharp;
 using System.Security.Policy;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace Nikse.SubtitleEdit.Forms
 {
     public sealed partial class SyncPointsSync : PositionAndSizeForm
     {
-        public class Anchor : IEquatable<Anchor>
+        new public class Anchor : IEquatable<Anchor>
         {
             public int First;
             public int Second;
@@ -123,6 +125,7 @@ namespace Nikse.SubtitleEdit.Forms
             subtitleListView1.Anchor = AnchorStyles.Left;
             buttonSetSyncPoint.Anchor = AnchorStyles.Left;
             buttonAutoSetSyncPoints.Anchor = AnchorStyles.Left;
+            autoSetSyncProgress.Anchor = AnchorStyles.Left;
             similarityScoreLabel.Anchor = AnchorStyles.Left;
             minFuzzScore.Anchor = AnchorStyles.Left;
             minFuzzScore.Anchor = AnchorStyles.Left;
@@ -138,6 +141,7 @@ namespace Nikse.SubtitleEdit.Forms
             subtitleListView1.Anchor = AnchorStyles.Left | AnchorStyles.Bottom | AnchorStyles.Top | AnchorStyles.Right;
             buttonSetSyncPoint.Anchor = AnchorStyles.Right;
             buttonAutoSetSyncPoints.Anchor = AnchorStyles.Right;
+            autoSetSyncProgress.Anchor = AnchorStyles.Right;
             similarityScoreLabel.Anchor = AnchorStyles.Right;
             minFuzzScore.Anchor = AnchorStyles.Right;
             buttonRemoveSyncPoint.Anchor = AnchorStyles.Right;
@@ -175,6 +179,7 @@ namespace Nikse.SubtitleEdit.Forms
             subtitleListView2.Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Bottom;
             buttonSetSyncPoint.Anchor = AnchorStyles.Left;
             buttonAutoSetSyncPoints.Anchor = AnchorStyles.Left;
+            autoSetSyncProgress.Anchor = AnchorStyles.Left;
             similarityScoreLabel.Anchor = AnchorStyles.Left;
             minFuzzScore.Anchor = AnchorStyles.Left;
             buttonRemoveSyncPoint.Anchor = AnchorStyles.Left;
@@ -187,7 +192,7 @@ namespace Nikse.SubtitleEdit.Forms
             Width = subtitleListView2.Width * 2 + 250;
             MinimumSize = new Size(Width - 50, MinimumSize.Height);
         }
-        
+
         private void RefreshSynchronizationPointsUi()
         {
             buttonApplySync.Enabled = _synchronizationPoints.Count > 0;
@@ -214,8 +219,8 @@ namespace Nikse.SubtitleEdit.Forms
                 }
             }
 
-            SetViewColors( _otherSubtitle, subtitleListView2, _synchronizationPoints.Values.Select(v => v.OtherIndex), GetSelectedParagraph(_subtitle, subtitleListView1));
-            SetViewColors( _subtitle, subtitleListView1,  _synchronizationPoints.Keys, GetSelectedParagraph(_otherSubtitle, subtitleListView2));
+            SetViewColors(_otherSubtitle, subtitleListView2, _synchronizationPoints.Values.Select(v => v.OtherIndex), GetSelectedParagraph(_subtitle, subtitleListView1));
+            SetViewColors(_subtitle, subtitleListView1, _synchronizationPoints.Keys, GetSelectedParagraph(_otherSubtitle, subtitleListView2));
         }
 
         private void buttonSetSyncPoint_Click(object sender, EventArgs e)
@@ -512,6 +517,7 @@ namespace Nikse.SubtitleEdit.Forms
                 subtitleListView2.Left = subtitleListView1.Left + subtitleListView1.Width + widthInMiddle + 10;
                 listBoxSyncPoints.Left = subtitleListView1.Left + subtitleListView1.Width + 5;
                 buttonSetSyncPoint.Left = listBoxSyncPoints.Left;
+                autoSetSyncProgress.Left = listBoxSyncPoints.Left;
                 buttonAutoSetSyncPoints.Left = listBoxSyncPoints.Left;
                 similarityScoreLabel.Left = listBoxSyncPoints.Left;
                 minFuzzScore.Left = listBoxSyncPoints.Left;
@@ -553,15 +559,15 @@ namespace Nikse.SubtitleEdit.Forms
                 }
             }
         }
-        
+
         private void SubtitleListview1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            SetViewColors( _otherSubtitle, subtitleListView2, _synchronizationPoints.Values.Select(v => v.OtherIndex), GetSelectedParagraph(_subtitle, subtitleListView1));
+            SetViewColors(_otherSubtitle, subtitleListView2, _synchronizationPoints.Values.Select(v => v.OtherIndex), GetSelectedParagraph(_subtitle, subtitleListView1));
         }
-        
+
         private void subtitleListView2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            SetViewColors( _subtitle, subtitleListView1,  _synchronizationPoints.Keys, GetSelectedParagraph(_otherSubtitle, subtitleListView2));
+            SetViewColors(_subtitle, subtitleListView1, _synchronizationPoints.Keys, GetSelectedParagraph(_otherSubtitle, subtitleListView2));
         }
 
         private static Paragraph GetSelectedParagraph(Subtitle subtitle, SubtitleListView view)
@@ -569,9 +575,9 @@ namespace Nikse.SubtitleEdit.Forms
             var selectedIndex = view.SelectedIndex;
             return selectedIndex == SubtitleListView.InvalidIndex ? null : subtitle.Paragraphs[selectedIndex];
         }
-        
 
-        private void SetViewColors( Subtitle subtitle,  SubtitleListView view, IEnumerable<int> marked, Paragraph syncParagraph = null )
+
+        private void SetViewColors(Subtitle subtitle, SubtitleListView view, IEnumerable<int> marked, Paragraph syncParagraph = null)
         {
             if (!view.Visible) return;
             var markedHashSet = marked.Where(v => v != SubtitleListView.InvalidIndex).ToHashSet();
@@ -590,7 +596,7 @@ namespace Nikse.SubtitleEdit.Forms
             if (selectedDuration == 0)
                 selectedDuration = 1000;
 
-            
+
             (int Index, double Dinstance) closesIndex = (SubtitleListView.InvalidIndex, 0d);
             for (var i = 0; i < view.Items.Count; i++)
             {
@@ -611,32 +617,32 @@ namespace Nikse.SubtitleEdit.Forms
             view.Items[closesIndex.Index].EnsureVisible();
         }
         private Color MarkedBackgroundColor { get; } = ColorTranslator.FromHtml("#6ebe6e");
-        private Color VisualMarkBackgroundColor { get; } = Configuration.Settings.General.UseDarkTheme ? Color.LightGray: Color.DarkGray;
+        private Color VisualMarkBackgroundColor { get; } = Configuration.Settings.General.UseDarkTheme ? Color.LightGray : Color.DarkGray;
 
         private Color CalculateBackgroundColor(Color baseColor, bool shouldUseSyncColor, double percentageDistance)
         {
             var color = shouldUseSyncColor ? MarkedBackgroundColor : baseColor;
             if (percentageDistance >= 1) return color;
-            
-            var visualMarkedColorWithOffset = VisualMarkBackgroundColor.Blend(baseColor,   percentageDistance);
+
+            var visualMarkedColorWithOffset = VisualMarkBackgroundColor.Blend(baseColor, percentageDistance);
             return shouldUseSyncColor
-                ? visualMarkedColorWithOffset.Blend(MarkedBackgroundColor )
+                ? visualMarkedColorWithOffset.Blend(MarkedBackgroundColor)
                 : visualMarkedColorWithOffset;
         }
-        
+
         private static Color CalculateForegroundColor(Color baseColor, double backGroundColorLuminance, double percentageDistance)
         {
-            if (percentageDistance >= 1 )
+            if (percentageDistance >= 1)
                 return baseColor;
             if (backGroundColorLuminance < 0.5)
             {
-                return Color.White; 
+                return Color.White;
             }
 
             return Color.Black;
         }
 
-        private void buttonAutoSetSyncPoints_Click(object sender, EventArgs e)
+        private void buttonAutoSetSyncPoint2s_Click(object sender, EventArgs e)
         {
             double FUZZ_THRESHOLD = minFuzzScore.Value;
 
@@ -656,6 +662,8 @@ namespace Nikse.SubtitleEdit.Forms
                     }
                 }
             }
+
+            Console.WriteLine(anchors.Count);
 
             int mostCollisions;
 
@@ -723,6 +731,155 @@ namespace Nikse.SubtitleEdit.Forms
             }
 
             RefreshSynchronizationPointsUi();
+        }
+
+        private async void buttonAutoSetSyncPoints_Click(object sender, EventArgs e)
+        {
+            Console.WriteLine("Searching for sync points.");
+            double FUZZ_THRESHOLD = minFuzzScore.Value;
+
+            buttonAutoSetSyncPoints.Enabled = false;
+            autoSetSyncProgress.Value = 0;
+            autoSetSyncProgress.Visible = true;
+            autoSetSyncProgress.Maximum = _subtitle.Paragraphs.Count;
+
+            try
+            {
+                HashSet<Anchor> resultPoints = await Task.Run(() =>
+                {
+                    
+                    ConcurrentBag<Anchor> t_anchors = new ConcurrentBag<Anchor>();
+
+                    Parallel.For(0, _subtitle.Paragraphs.Count, i => {
+                        var paragraph = _subtitle.Paragraphs[i];
+                        for (int j = 0; j < _otherSubtitle.Paragraphs.Count; j++)
+                        {
+                            var otherParagraph = _otherSubtitle.Paragraphs[j];
+                            double similarityScore = Fuzz.PartialTokenSetRatio(paragraph.Text, otherParagraph.Text);
+
+                            if (similarityScore >= FUZZ_THRESHOLD)
+                            {
+                                t_anchors.Add(new Anchor(first: i, second: j));
+                            }
+                        }
+                        this.Invoke((MethodInvoker)delegate {
+                            autoSetSyncProgress.Value++;
+                        });
+                    });
+
+                    this.Invoke((MethodInvoker)delegate {
+                        autoSetSyncProgress.Value = 0;
+                        autoSetSyncProgress.Maximum = 1;
+                    });
+
+                    HashSet<Anchor> anchors = new HashSet<Anchor>(t_anchors);
+
+                    Console.WriteLine(anchors.Count);
+
+                    int mostCollisions;
+
+
+                    do
+                    {
+                        mostCollisions = 0;
+
+
+                        foreach (var anchor in anchors)
+                        {
+                            anchor.Collisions = 0;
+                        }
+
+
+                        List<Anchor> currentAnchorsSnapshot = anchors.ToList();
+
+                        Parallel.For(0, currentAnchorsSnapshot.Count - 1, i =>
+                        {
+                            Anchor anchor = currentAnchorsSnapshot[i];
+
+                            for (int j = i + 1; j < currentAnchorsSnapshot.Count; j++)
+                            {
+                                Anchor otherAnchor = currentAnchorsSnapshot[j];
+
+                                bool isCollision = (anchor.First > otherAnchor.First) != (anchor.Second > otherAnchor.Second) ||
+                                                   (anchor.First == otherAnchor.First) ||
+                                                   (anchor.Second == otherAnchor.Second);
+
+                                if (isCollision)
+                                {
+                                    System.Threading.Interlocked.Increment(ref anchor.Collisions);
+                                    System.Threading.Interlocked.Increment(ref otherAnchor.Collisions);
+                                }
+                            }
+                        });
+
+                        foreach (var anchor in currentAnchorsSnapshot)
+                        {
+                            if (anchor.Collisions > mostCollisions)
+                            {
+                                mostCollisions = anchor.Collisions;
+                            }
+                        }
+
+                        if (mostCollisions > 0)
+                        {
+                            if (mostCollisions > 10000)
+                            {
+                                anchors = anchors.Where(
+                                    a => a.Collisions < 0.85 * mostCollisions
+                                ).ToHashSet(); // this exists in C#!!! Finally microsoft doesn't make me want to kill myself
+                            }
+                            else if (mostCollisions > 100)
+                            {
+                                anchors = anchors.Where(
+                                    a => a.Collisions < 0.95 * mostCollisions
+                                ).ToHashSet(); // this exists in C#!!! Finally microsoft doesn't make me want to kill myself
+                            }
+                            else
+                            {
+                                anchors = anchors.Where(a => a.Collisions != mostCollisions).ToHashSet(); // this exists in C#!!! Finally microsoft doesn't make me want to kill myself
+                            }
+                            
+                        }
+                        Console.WriteLine("Loop " + mostCollisions);
+
+                        this.Invoke((MethodInvoker)delegate {
+                            if (mostCollisions > autoSetSyncProgress.Maximum)
+                            {
+                                autoSetSyncProgress.Maximum = mostCollisions;
+                            }
+                            autoSetSyncProgress.Value = autoSetSyncProgress.Maximum - mostCollisions;
+                        });
+                    } while (mostCollisions > 0);
+
+                    Console.WriteLine(anchors.Count);
+                    return anchors;
+                });
+                _synchronizationPoints.Clear(); // idk if clearing is smart, can be removed later
+
+                foreach (var anchor in resultPoints)
+                {
+                    if (anchor.Second >= 0 && anchor.Second < _otherSubtitle.Paragraphs.Count)
+                    {
+                        _synchronizationPoints[anchor.First] = (
+                            TimeSpan.FromMilliseconds(_otherSubtitle.Paragraphs[anchor.Second].StartTime.TotalMilliseconds),
+                            anchor.Second
+                        );
+                    }
+                }
+
+                RefreshSynchronizationPointsUi();
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions that occurred in the background task
+                MessageBox.Show($"An error occurred during synchronization: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Console.WriteLine(ex.ToString()); // Log the full exception for debugging
+            }
+            finally
+            {
+                buttonAutoSetSyncPoints.Enabled = true;
+                autoSetSyncProgress.Visible = false;
+            }
         }
     }
 }
